@@ -45,23 +45,26 @@ void randomMatrixFilling(cl_uint* data, const cl_uint size) {
 }
 
 int main(int argc, char** argv) {
-    /*
-    if (argc < 5)
-        printError("not enough aruments.\n1:M-dimetion, 2:K-dimetion, 3:N-dimetion, 4:Path to kernal, 5(optional):CPU verification", 101);
+    
+    if (argc < 4) {
+        std::cout << "usage: .\openCLLab.cpp \t[-C <number of rows>] [-C <number of columns>]\n" <<
+            "\t\t\t[-C <path to file>] [-c <validation>].";
+        return 0;
+    }
 
     cl_uint M = std::atoi(argv[1]); 
     cl_uint N = std::atoi(argv[2]); 
     std::string pathToFile = argv[3];
     bool checkResult = false;
     if (argc == 5) {
-        if(std::string(argv[4]) == "1")
+        if(std::string(argv[4]) == "true")
             checkResult = true;
-    }*/
+    }
 
-    cl_uint M = 5;
-    cl_uint N = 5;
+    /*cl_uint M = 5333;
+    cl_uint N = 8333;
     std::string pathToFile = "matrixTranspose.cl";
-    bool checkResult = true;
+    bool checkResult = true;*/
 
     cl_int err = 0;
 
@@ -115,6 +118,9 @@ int main(int argc, char** argv) {
         size_t maxWorkGroupSize;
         clGetDeviceInfo(device_id, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(maxWorkGroupSize), &maxWorkGroupSize, NULL);
         printf("Max work group size: \t\t%d\n", maxWorkGroupSize);
+
+        clGetDeviceInfo(device_id, CL_DEVICE_LOCAL_MEM_SIZE, sizeof(maxWorkGroupSize), &maxWorkGroupSize, NULL);
+        printf("Size of local memory supported: %d\n", maxWorkGroupSize);
 
         size_t dimetion[3];
         clGetDeviceInfo(device_id, CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(dimetion), &dimetion, NULL);
@@ -199,7 +205,7 @@ int main(int argc, char** argv) {
     printError("setting kernel argument", err);
 
     // local and global sizes
-    size_t localWorkSize[2] = {32,32};
+    size_t localWorkSize[2] = { 32,32 };
 
     size_t globalWorkSize[2] = { 
         ceil(double(N) / 32.0) * 32, 
@@ -218,7 +224,7 @@ int main(int argc, char** argv) {
     clGetEventProfilingInfo(waitEvent, CL_PROFILING_COMMAND_START, sizeof(time_start), &time_start, NULL);
     clGetEventProfilingInfo(waitEvent, CL_PROFILING_COMMAND_END, sizeof(time_end), &time_end, NULL);
     double nanoSeconds = time_end - time_start;
-    std::cout << "GPU calculation time: \t" << nanoSeconds / 1000000.0 << "ms \n";
+    std::cout << "\nGPU calculation time with global mem. using: \t" << nanoSeconds / 1000000.0 << "ms \n";
     printError("executing kernel!", err);
     // Where is my results
     err = clEnqueueReadBuffer(commands, bufferC, CL_TRUE, 0, sizeof(cl_uint) * size_C, Cmatrix, 0, NULL, NULL);
@@ -234,7 +240,7 @@ int main(int argc, char** argv) {
     clGetEventProfilingInfo(waitEvent1, CL_PROFILING_COMMAND_START, sizeof(time_start1), &time_start1, NULL);
     clGetEventProfilingInfo(waitEvent1, CL_PROFILING_COMMAND_END, sizeof(time_end1), &time_end1, NULL);
     nanoSeconds = time_end1 - time_start1;
-    std::cout << "GPU calculation time: \t" << nanoSeconds / 1000000.0 << "ms \n";
+    std::cout << "GPU calculation time with local memory using: \t" << nanoSeconds / 1000000.0 << "ms \n";
     printError("executing kernel!", err);
     // Where is my results
     err = clEnqueueReadBuffer(commands, bufferD, CL_TRUE, 0, sizeof(cl_uint) * size_C, Dmatrix, 0, NULL, NULL);
@@ -250,7 +256,7 @@ int main(int argc, char** argv) {
     clGetEventProfilingInfo(waitEvent2, CL_PROFILING_COMMAND_START, sizeof(time_start2), &time_start2, NULL);
     clGetEventProfilingInfo(waitEvent2, CL_PROFILING_COMMAND_END, sizeof(time_end2), &time_end2, NULL);
     nanoSeconds = time_end2 - time_start2;
-    std::cout << "GPU calculation time: \t" << nanoSeconds / 1000000.0 << "ms \n";
+    std::cout << "GPU calculation time with local memory without bank conflict using: \t" << nanoSeconds / 1000000.0 << "ms \n";
     printError("executing kernel!", err);
     // Where is my results
     err = clEnqueueReadBuffer(commands, bufferE, CL_TRUE, 0, sizeof(cl_uint) * size_C, Ematrix, 0, NULL, NULL);
@@ -263,7 +269,7 @@ int main(int argc, char** argv) {
 
         auto stop = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start);
-        std::cout << "CPU calculation time: \t" << duration.count() / 1000000.0 << "ms \n";
+        std::cout << "CPU calculation time: \t" << duration.count() / 1000000.0 << "ms \n\n";
 
         bool isEqualC = true, isEqualD = true, isEqualE = true;
 
